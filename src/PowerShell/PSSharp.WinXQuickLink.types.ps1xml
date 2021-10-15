@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Types>
+    <Type>
+        <Name>PSSharp.WinXQuickLink.QuickLink</Name>
+        <Members>
+
+        </Members>
+    </Type>
+    <Type>
+        <Name>PSSharp.WinXQuickLink.QuickLinkGroup</Name>
+        <Members>
+            
+        </Members>
+    </Type>
+</Types>

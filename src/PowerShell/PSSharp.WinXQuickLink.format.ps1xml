@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>PSSharp.WinXQuickLink.QuickLink</Name>
+            <ViewSelectedBy>
+                <TypeName>PSSharp.WinXQuickLink.QuickLink</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <AutoSize>true</AutoSize>
+                <TableHeaders>
+                    <TableColumnHeader>
+                        <Alignment>Right</Alignment>
+                    </TableColumnHeader> <!-- Position -->
+                    <TableColumnHeader/> <!-- Group -->
+                    <TableColumnHeader/> <!-- Name -->
+                    <TableColumnHeader/> <!-- FilePath -->
+                    <TableColumnHeader/> <!-- Arguments -->
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>Position</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Group</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Name</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>FilePath</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Arguments</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>PSSharp.WinXQuickLink.QuickLinkGroup</Name>
+            <ViewSelectedBy>
+                <TypeName>PSSharp.WinXQuickLink.QuickLinkGroup</TypeName>
+            </ViewSelectedBy>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>
