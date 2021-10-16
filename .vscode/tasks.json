@@ -1,0 +1,66 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "detail": "Builds the PowerShell module",
+            "command": "pwsh",
+            "args": [
+                "-File",
+                "${workspaceFolder}/build/build.ps1"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "pester tests",
+            "type": "shell",
+            "detail": "Test PowerShell functionality with Pester tests",
+            "command": "pwsh",
+            "args": [
+                "-Command",
+                //"Import-Module '${workspaceFolder}/build/PSSharp.WinXQuickLink'; Import-Module Pester -MinimumVersion 5.0; Invoke-Pester -Path '${workspaceFolder}/tests/'"
+                { 
+                    "quoting": "weak",
+                    "value": "Import-Module '${workspaceFolder}/build/PSSharp.WinXQuickLink'; Import-Module Pester -MinimumVersion 5.0; Invoke-Pester -Configuration @{Run=@{Path='${workspaceFolder}/tests/'};Output=@{Verbosity='Detailed'}}"
+                },
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": "$pester"
+        },
+        // {
+        //     "label": "xunit tests",
+        //     "detail": "Test C# functionality with XUnit tests",
+        //     "type": "shell",
+        //     "command": "dotnet",
+        //     "args": [
+        //         "test",
+        //         "${workspaceFolder}/src/PSSharp.WinXQuickLink.Tests"
+        //     ],
+        //     "group":  "test",
+        //     "problemMatcher": "$msCompile"
+        // },
+        // {
+        //     "label": "all tests",
+        //     "type": "shell",
+        //     "command": "echo Hello",
+        //     "group": {
+        //         "kind": "test",
+        //         "isDefault": true
+        //     },
+        //     "dependsOn": [
+        //         "xunit tests",
+        //         "pester tests"
+        //     ]
+        // }
+    ]
+}

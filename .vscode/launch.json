@@ -5,6 +5,36 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "PowerShell Core",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "pwsh",
+            "args": [
+                "-NoExit",
+                "-NoProfile",
+                "-Command",
+                "Import-Module '${workspaceFolder}/build/PSSharp.WinXQuickLink'"
+            ],
+            "preLaunchTask": "build",
+            "console": "externalTerminal",
+            "cwd": "${workspaceFolder}",
+        },
+        // {
+        //     "name": "Windows PowerShell",
+        //     "type": "clr",
+        //     "request": "launch",
+        //     "program": "powershell",
+        //     "args": [
+        //         "-NoExit",
+        //         "-NoProfile",
+        //         "-Command",
+        //         "Import-Module '${workspaceFolder}/build/PSSharp.WinXQuickLink'"
+        //     ],
+        //     "preLaunchTask": "build",
+        //     "console": "externalTerminal",
+        //     "cwd": "${workspaceFolder}"
+        // },
+        {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach"

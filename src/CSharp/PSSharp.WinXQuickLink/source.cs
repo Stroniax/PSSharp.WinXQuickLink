@@ -12,69 +12,107 @@ using System.Collections;
 using System.Linq;
 using PSSharp.WinXQuickLink;
 using WindowsShortcutFactory;
+using System.Collections.Concurrent;
+using System.Management.Automation.Language;
 
 namespace PSSharp.WinXQuickLink
 {
+    /// <summary>
+    /// Arguments when a <see cref="QuickLinkGroup"/> collection is modified
+    /// (a <see cref="QuickLinkEntry"/> was added or removed).
+    /// </summary>
+    public sealed class QuickLinkCollectionModifiedEventArgs : EventArgs
+    {
+        public QuickLinkCollectionModifiedEventArgs(QuickLinkEntry entry, bool removed)
+        {
+            Entry = entry ?? throw new ArgumentNullException(nameof(entry));
+            Removed = removed;
+        }
+
+        /// <summary>
+        /// The entry that was added to or removed from the group.
+        /// </summary>
+        /// <value></value>
+        public QuickLinkEntry Entry { get; }
+        /// <summary>
+        /// <see langword="false"/> indicates that the entry was added to the group.
+        /// <see cref="true"/> indicates that the entry was removed from the group.
+        /// </summary>
+        public bool Removed { get; set; }
+    }
+    /// <summary>
+    /// Base class for <see cref="QuickLinkGroup"/> and <see cref="QuickLinkEntry"/>.
+    /// </summary>
     [Serializable]
     public abstract class QuickLinkBase : INotifyPropertyChanged, IComparable<QuickLinkBase>
     {
         #region static members
         static QuickLinkBase()
         {
+            Errors = new ConcurrentQueue<ErrorRecord>();
+            Groups = new List<QuickLinkGroup>();
             Watcher = new FileSystemWatcher()
             {
                 IncludeSubdirectories = true,
                 Path = QuickLinkGroupDirectory,
             };
 
-            _groups = new List<QuickLinkGroup>();
 
-            lock(_constructingLock)
+            lock (_constructingLock)
             {
-                Watcher.Error += (sender, e) => ResetQuickLinks();
+                Watcher.Error += (sender, e) => EnsureQuickLinksLoaded();
                 Watcher.Renamed += OnFileWatcherEvent;
                 Watcher.Deleted += OnFileWatcherEvent;
                 Watcher.Created += OnFileWatcherEvent;
                 Watcher.Changed += OnFileWatcherEvent;
-                
-                ResetQuickLinks();
-            }
-        }
-        private static volatile bool _reloadQuickLinksRequired;
-        internal static void ResetQuickLinks()
-        {
-            lock(_constructingLock)
-            {
-                _groups ??= new List<QuickLinkGroup>();
-                _groups.ForEach(i => i.IsInvalidated = true);
-                _groups.Clear();
-                _reloadQuickLinksRequired = true;
-            }
-        }
-        internal static void EnsureQuickLinksLoaded(PSCmdlet cmdlet)
-        {
-            lock(_constructingLock)
-            {
-                if (_reloadQuickLinksRequired)
-                {
-                    _reloadQuickLinksRequired = false;
-                }
-                else
-                {
-                    return;
-                }
 
-                ResetQuickLinks();
-                
+                EnsureQuickLinksLoaded();
+            }
+        }
+        internal static ConcurrentQueue<ErrorRecord> Errors;
+        internal static void EnsureQuickLinksLoaded()
+        {
+            lock (_constructingLock)
+            {
+                Groups ??= new List<QuickLinkGroup>();
+                Groups.ForEach(i => i.IsLive = false);
+                Groups.Clear();
+
                 var directoryPaths = Directory.GetDirectories(QuickLinkGroupDirectory);
                 foreach (var directoryPath in directoryPaths)
                 {
                     // create a QuickLinkGroup instance from the directory
+                    try {
+                        var group = new QuickLinkGroup(new DirectoryInfo(directoryPath))
+                        {
+                            _isLive = true
+                        };
 
-                    var entryPaths = Directory.GetFiles(directoryPath);
-                    foreach (var entryPath in entryPaths)
+                        var entryPaths = Directory.GetFiles(directoryPath);
+                        foreach (var entryPath in entryPaths)
+                        {
+                            // create a QuickLinkEntry from the file
+                            try
+                            {
+                                var file = new FileInfo(entryPath);
+                                var shortcut = WindowsShortcut.Load(entryPath);
+                                var entry = new QuickLinkEntry(file)
+                                {
+                                    _isLive = true
+                                };
+
+                                group.Add(entry);
+                            }
+                            catch (Exception e)
+                            {
+                                Errors.Enqueue(new ErrorRecord(e, "WinXQuickLinkEntry", ErrorCategory.NotSpecified, entryPath));
+                            }
+                        }
+                        Groups.Add(group);
+                    }
+                    catch (Exception e)
                     {
-                        // create a QuickLinkEntry from the file
+                        Errors.Enqueue(new ErrorRecord(e, "WinXQuickLinkGroup", ErrorCategory.NotSpecified, directoryPath));
                     }
                 }
             }
@@ -89,7 +127,7 @@ namespace PSSharp.WinXQuickLink
                 oldFullPath = changedPath = renamedArgs.OldFullPath;
                 oldName = renamedArgs.OldName;
             }
-            
+
             // identify the original entry and update it appropriately
 
             // identify the siblings of the change path
@@ -116,7 +154,7 @@ namespace PSSharp.WinXQuickLink
         /// <summary>
         /// Contains all QuickLink groups in the File System, which collectively contain all QuickLink entries.
         /// </sumary>
-        private static List<QuickLinkGroup> _groups;
+        protected static List<QuickLinkGroup> Groups;
         #endregion static members
 
         #region  instance members
@@ -131,7 +169,7 @@ namespace PSSharp.WinXQuickLink
         private string _path;
         private string _name;
         private int _position;
-        private bool _isInvalidated;
+        private bool _isLive;
 
         /// <summary>
         /// The FileSystem path of the shortcut file or directory that is represented by the current <see cref="QuickLinkEntry"/>
@@ -148,7 +186,7 @@ namespace PSSharp.WinXQuickLink
             }
         }
         /// <summary>
-        /// The display name of the item.
+        /// The file system name of the item.
         /// </summary>
         public string Name
         {
@@ -178,15 +216,23 @@ namespace PSSharp.WinXQuickLink
         /// <summary>
         /// Indicates whether the current instance no longer represents live data.
         /// </summary>
-        public bool IsInvalidated
+        public bool IsLive
         {
-            get => _isInvalidated;
+            get => _isLive;
             private set
             {
-                if (_isInvalidated || !value) return;
-                _isInvalidated = true;
+                if (!_isLive || value) return;
+                _isLive = true;
+                if (this is QuickLinkGroup group)
+                {
+                    Groups.Remove(group);
+                }
+                else if (this is QuickLinkEntry entry)
+                {
+                    entry.Group?.Remove(entry);
+                }
                 Invalidated?.Invoke(this, EventArgs.Empty);
-                NotifyPropertyChanged(nameof(IsInvalidated));
+                NotifyPropertyChanged(nameof(IsLive));
             }
         }
 
@@ -212,7 +258,7 @@ namespace PSSharp.WinXQuickLink
             }
             catch
             {
-                this.IsInvalidated = true;
+                this.IsLive = false;
                 throw;
             }
         }
@@ -233,9 +279,9 @@ namespace PSSharp.WinXQuickLink
             {
                 return 1;
             }
-            if (IsInvalidated != other.IsInvalidated)
+            if (IsLive != other.IsLive)
             {
-                return IsInvalidated ? -1 : 1;
+                return IsLive ? -1 : 1;
             }
             return Position < other.Position ? -1
                 : Position > other.Position ? 1
@@ -243,21 +289,30 @@ namespace PSSharp.WinXQuickLink
         }
         #endregion
     }
+
+    /// <summary>
+    /// A group of <see cref="QuickLinkEntry"/> objects which appear in the Win+X Quick Link menu.
+    /// </summary>
     [Serializable]
     public sealed class QuickLinkGroup : QuickLinkBase, IReadOnlyList<QuickLinkEntry>, IComparable<QuickLinkGroup>
     {
+        public static List<QuickLinkGroup> GetGroups()
+            => QuickLinkBase.Groups.ToList();
+
         internal QuickLinkGroup(DirectoryInfo directory)
-            :base(directory.FullName, directory.Name)
+            : base(directory.FullName, directory.Name)
         {
 
         }
         internal QuickLinkGroup(string path, IEnumerable<QuickLinkEntry> entries)
-            :base(path, System.IO.Path.GetDirectoryName(path))
+            : base(path, System.IO.Path.GetDirectoryName(path))
         {
             _entries.AddRange(entries);
             _totalCount = _entries.Count;
             _count = _entries.Count(i => i.IsEnabled);
         }
+
+        public event EventHandler<QuickLinkCollectionModifiedEventArgs>? CollectionModified;
 
 
         private readonly List<QuickLinkEntry> _entries = new List<QuickLinkEntry>(16);
@@ -266,7 +321,7 @@ namespace PSSharp.WinXQuickLink
 
         public QuickLinkEntry this[int index]
         {
-            get 
+            get
             {
                 if (index < 0) throw new ArgumentOutOfRangeException(
                     nameof(index),
@@ -316,6 +371,8 @@ namespace PSSharp.WinXQuickLink
 
         internal void Add(QuickLinkEntry entry)
         {
+            if (entry is null) throw new ArgumentNullException(nameof(entry));
+
             if (!_entries.Contains(entry))
             {
                 _entries.Add(entry);
@@ -324,9 +381,14 @@ namespace PSSharp.WinXQuickLink
                     Count++;
                 }
                 TotalCount++;
+                ReorganizeEntries();
+                entry.Group = this;
+                CollectionModified?.Invoke(this, new QuickLinkCollectionModifiedEventArgs(entry, false));
             }
-            entry.Group = this;
-            ReorganizeEntries();
+            else
+            {
+                entry.Group = this;
+            }
         }
         internal void Remove(QuickLinkEntry entry)
         {
@@ -337,12 +399,13 @@ namespace PSSharp.WinXQuickLink
                     Count--;
                 }
                 TotalCount--;
+                ReorganizeEntries();
+                CollectionModified?.Invoke(this, new QuickLinkCollectionModifiedEventArgs(entry, true));
             }
             if (entry.Group == this)
             {
                 entry.Group = null;
             }
-            ReorganizeEntries();
         }
 
         public int CompareTo(QuickLinkGroup other)
@@ -351,9 +414,9 @@ namespace PSSharp.WinXQuickLink
             {
                 return -1;
             }
-            if (IsInvalidated != other.IsInvalidated)
+            if (IsLive != other.IsLive)
             {
-                return IsInvalidated ? -1 : 1;
+                return IsLive ? -1 : 1;
             }
             return Position < other.Position ? -1
                 : Position > other.Position ? 1
@@ -377,15 +440,44 @@ namespace PSSharp.WinXQuickLink
             });
         }
     }
+    /// <summary>
+    /// A Win+X Quick Link that may be used in the Win+X Quick Link menu.
+    /// </summary>
     [Serializable]
     public sealed class QuickLinkEntry : QuickLinkBase, IComparable<QuickLinkEntry>
     {
+        public static List<QuickLinkEntry> GetEntries()
+            => QuickLinkBase.Groups.SelectMany(e => e).ToList();
+
         [NonSerialized]
         private QuickLinkGroup? _group;
         private string _targetPath;
+        private string _displayName;
         private bool _runAsAdministrator;
         private bool _isEnabled;
 
+        internal QuickLinkEntry(FileInfo file)
+            : base(file.FullName, file.Name)
+        {
+            var shortcut = WindowsShortcut.Load(file.FullName);
+            _targetPath = shortcut.Path!;
+            if (!string.IsNullOrWhiteSpace(shortcut.Description))
+            {
+                _displayName = shortcut.Description!;
+            }
+            else
+            {
+                _displayName = file.Name.Split('-').Last();
+            }
+
+            using (var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read)){
+                fs.Position = 0x14;
+                var runAsAdminByte = new byte[1];
+                fs.Read(runAsAdminByte, 0, 1);
+                _runAsAdministrator = (runAsAdminByte[0] | 0x20) == runAsAdminByte[0];
+            }
+            #warning identify if the quick link is enabled
+        }
         /// <summary>
         /// Deserialization constructor.
         /// </summary>
@@ -419,6 +511,15 @@ namespace PSSharp.WinXQuickLink
             }
         }
 
+        public string DisplayName
+        {
+            get => _displayName;
+            set
+            {
+                _displayName = value ?? throw new ArgumentNullException(nameof(DisplayName));
+                NotifyPropertyChanged(nameof(DisplayName));
+            }
+        }
         /// <summary>
         /// The path to the file that the quick link shortcut executes.
         /// </summary>
@@ -463,14 +564,104 @@ namespace PSSharp.WinXQuickLink
             {
                 return -1;
             }
-            if (IsInvalidated != other.IsInvalidated)
+            if (IsLive != other.IsLive)
             {
-                return IsInvalidated ? -1 : 1;
+                return IsLive ? -1 : 1;
             }
             return Position < other.Position ? -1
                 : Position > other.Position ? 1
                 : 0;
         }
+    }
+
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    public abstract class WinXQuickLinkCompleterBase : ArgumentCompleterAttribute, IArgumentCompleter
+    {
+        /// <summary>
+        /// Provide the type of the derived instance.
+        /// </summary>
+        /// <param name="type"></param>
+        internal WinXQuickLinkCompleterBase(Type type)
+            : base(type)
+        {
+        }
+
+        private static string GetQuotation(StringConstantType? stringType) => stringType switch 
+        {
+            StringConstantType.BareWord => "",
+            StringConstantType.DoubleQuoted => "\"",
+            _ => "'"
+        };
+        protected static CompletionResult GetCompletionResult(
+            string completionText,
+            string? listItemText = null,
+            string? toolTip = null,
+            CompletionResultType resultType = CompletionResultType.ParameterValue,
+            StringConstantType? suggestedQuotations = null,
+            StringConstantType providedQuotations = StringConstantType.BareWord)
+        {
+            if (listItemText is null && toolTip != null)
+            {
+                listItemText = toolTip;
+            }
+            else if (toolTip is null && listItemText != null)
+            {
+                toolTip = listItemText;
+            }
+            else if (toolTip is null && listItemText is null)
+            {
+                toolTip = listItemText = completionText;
+            }
+            if (completionText.Contains(" "))
+            {
+                var quote = suggestedQuotations.HasValue ? GetQuotation(suggestedQuotations) : GetQuotation(providedQuotations);
+                var completionContent = quote == "'"
+                    ? CodeGeneration.EscapeSingleQuotedStringContent(completionText)
+                    : completionText.Replace("\"", "`\"");
+                completionText = $"{quote}{completionContent}{quote}";
+            }
+            return new CompletionResult(
+                completionText,
+                listItemText,
+                resultType,
+                toolTip);
+        }
+
+        public IEnumerable<CompletionResult> CompleteArgument(string commandName, string parameterName, string wordToComplete, CommandAst commandAst, IDictionary fakeBoundParameters)
+        {
+            StringConstantType completionQuotes = StringConstantType.BareWord;
+            if (wordToComplete.StartsWith("'")) completionQuotes = StringConstantType.SingleQuoted;
+            else if (wordToComplete.StartsWith("\"")) completionQuotes = StringConstantType.DoubleQuoted;
+
+            var wc = WildcardPattern.Get(wordToComplete + "*", WildcardOptions.IgnoreCase);
+            foreach (var group in QuickLinkGroup.GetGroups())
+            {
+                if (CanTestGroups)
+                {
+                    var groupCompletion = GetCompletionForQuickLinkData(group, wc, fakeBoundParameters, completionQuotes);
+                    if (groupCompletion != null)
+                    {
+                        yield return groupCompletion;
+                    }
+                }
+                
+                if (CanTestEntries)
+                {
+                    foreach (var entry in group)
+                    {
+                        var entryCompletion = GetCompletionForQuickLinkData(entry, wc, fakeBoundParameters, completionQuotes);
+                        if (entryCompletion != null)
+                        {
+                            yield return entryCompletion;
+                        }
+                    }
+                }
+            }
+        }
+
+        protected abstract CompletionResult? GetCompletionForQuickLinkData(QuickLinkBase data, WildcardPattern wildcard, IDictionary fakeBoundParameters, StringConstantType expandStringType);
+        protected virtual bool CanTestGroups => true;
+        protected virtual bool CanTestEntries => true;
     }
 }
 
@@ -489,18 +680,24 @@ namespace PSSharp.Commands
         protected override void BeginProcessing()
         {
             base.BeginProcessing();
-            QuickLinkBase.EnsureQuickLinksLoaded(this);
+            // QuickLinkBase.EnsureQuickLinksLoaded();
         }
     }
-    [Cmdlet(VerbsCommon.Get, Noun)]
+    [Cmdlet(VerbsCommon.New, Noun)]
     public sealed class NewWinXQuickLinkCommand : WinXQuickLinkCommandBase
     {
-
     }
     [Cmdlet(VerbsCommon.Get, Noun)]
     public sealed class GetWinXQuickLinkCommand : WinXQuickLinkCommandBase
     {
-
+        protected override void BeginProcessing()
+        {
+            base.BeginProcessing();
+            while (QuickLinkBase.Errors.TryDequeue(out var error))
+            {
+                WriteError(error);
+            }
+        }
     }
 
     [Cmdlet(VerbsCommon.Rename, Noun)]
@@ -523,6 +720,17 @@ namespace PSSharp.Commands
     {
 
     }
+    [Cmdlet(VerbsLifecycle.Disable, Noun)]
+    public sealed class DisableWinXQuickLinkCommand : WinXQuickLinkCommandBase
+    {
+
+    }
+    [Cmdlet(VerbsLifecycle.Enable, Noun)]
+    public sealed class EnableWinXQuickLinkCommand : WinXQuickLinkCommandBase
+    {
+
+    }
+
     #endregion WinXQuickLink
     #region  WinXQuickLinkGroup
     public abstract class WinXQuickLinkGroupCommandBase : WinXQuickLinkCommandBase
