@@ -302,7 +302,6 @@ namespace PSSharp.WinXQuickLink
         internal QuickLinkGroup(DirectoryInfo directory)
             : base(directory.FullName, directory.Name)
         {
-
         }
         internal QuickLinkGroup(string path, IEnumerable<QuickLinkEntry> entries)
             : base(path, System.IO.Path.GetDirectoryName(path))

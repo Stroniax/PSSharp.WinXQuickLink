@@ -16,7 +16,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": "$msCompile"
+            // "problemMatcher": "$msCompile"
         },
         {
             "label": "pester tests",

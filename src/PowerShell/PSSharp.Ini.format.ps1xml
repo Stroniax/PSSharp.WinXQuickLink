@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<Configuration>
+    <Controls>
+        <Control>
+            <Name>IniSectionControl</Name>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <CustomItem>
+                            <NewLine />
+                            <Text>[</Text>
+                            <ExpressionBinding>
+                                <PropertyName>Name</PropertyName>
+                            </ExpressionBinding>
+                            <Text>]</Text>
+                            <ExpressionBinding>
+                                <ScriptBlock>$_.GetEnumerator()</ScriptBlock>
+                                <EnumerateCollection>true</EnumerateCollection>
+                                <CustomControlName>IniKeyControl</CustomControlName>
+                            </ExpressionBinding>
+                            <NewLine />
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </Control>
+        <Control>
+            <Name>IniKeyControl</Name>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <CustomItem>
+                            <NewLine />
+                            <Text>  </Text>
+                            <ExpressionBinding>
+                                <PropertyName>Key</PropertyName>
+                            </ExpressionBinding>
+                            <Text>=</Text>
+                            <ExpressionBinding>
+                                <PropertyName>Value</PropertyName>
+                            </ExpressionBinding>
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </Control>
+    </Controls>
+    <ViewDefinitions>
+        <View>
+            <Name>PSSharp.Ini.IniDictionary</Name>
+            <ViewSelectedBy>
+                <TypeName>PSSharp.Ini.IniDictionary</TypeName>
+            </ViewSelectedBy>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <CustomItem>
+                            <Text>.ini</Text>
+                            <ExpressionBinding>
+                                <ScriptBlock>[System.Diagnostics.Debug]::WriteLine('Getting sections of IniDictionary'); $sections = $_.GetSections(); [System.Diagnostics.Debug]::WriteLine("Got $($sections.Count) sections."); $sections</ScriptBlock>
+                                <EnumerateCollection>true</EnumerateCollection>
+                                <CustomControlName>IniSectionControl</CustomControlName>
+                            </ExpressionBinding>
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </View>
+        <View>
+            <Name>PSSharp.Ini.IniDictionary ToString</Name>
+            <ViewSelectedBy>
+                <TypeName>PSSharp.Ini.IniDictionary</TypeName>
+            </ViewSelectedBy>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <CustomItem>
+                            <ExpressionBinding>
+                                <ScriptBlock>
+                                    $_.ToSTring()
+                                </ScriptBlock>
+                            </ExpressionBinding>
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>

@@ -24,11 +24,19 @@ $dir['output'] = Join-Path $dir['build'] $ModuleName $Version
 $dir['module'] = Join-Path $dir['project'] 'src' 'PowerShell'
 $dir['binsrc'] = Join-Path $dir['project'] 'src' 'CSharp'
 $dir['bin'] = Join-Path $dir['binsrc'] $BinaryProjectName 'bin' $Configuration $Framework 'publish'
+$dir['otherbin'] = @( (Join-Path $dir['binsrc'] 'PSSharp.Ini' 'bin' $Configuration $Framework 'publish') )
 $dir['docs'] = Join-Path $dir['project'] 'src' 'documentation'
 
 Set-Location $dir['project']
 
-dotnet publish --configuration $Configuration --framework $framework
+# only re-build dotnet projects if there were any changes
+$lastWrite = Get-ChildItem -Path $dir['binsrc'] -Recurse -Directory | ForEach-Object { if (!$_.FullName.Contains('\bin\') -and !$_.FullName.Contains('\obj\')) { Get-ChildItem -Path $_ } } | Measure-Object -Property LastWriteTime -Maximum | Select-Object -ExpandProperty Maximum
+$currentLastWrite = Get-ChildItem -Path $dir['output'] -Recurse | Measure-Object -Property LastWriteTime -Maximum | Select-Object -ExpandProperty Maximum
+if ($currentLastWrite -lt $lastWrite) {
+    dotnet clean
+    dotnet publish --configuration $Configuration --framework $framework
+    if (!$?) { throw 'Build failed.' }
+}
 
 if (Test-Path $dir['output']) {
     Remove-Item $dir['output'] -Force -Recurse -ErrorAction Stop
