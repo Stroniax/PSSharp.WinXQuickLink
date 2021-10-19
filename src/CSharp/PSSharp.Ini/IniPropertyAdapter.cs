@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 
@@ -65,6 +66,8 @@ namespace PSSharp.Ini
                 throw new ArgumentException($"The base object must be of type {typeof(IniSection)}.", nameof(iniSection));
             }
         }
+        public static IEnumerator<KeyValuePair<string, string?>>? GetEnumerator(PSObject iniSection)
+            => (iniSection.BaseObject as IEnumerable<KeyValuePair<string, string?>>)?.GetEnumerator();
 
         public override Collection<PSAdaptedProperty> GetProperties(object baseObject)
         {
@@ -82,7 +85,7 @@ namespace PSSharp.Ini
             {
                 foreach (var keyValuePair in section)
                 {
-                    collection.Add(new PSAdaptedProperty(keyValuePair.Key, null));
+                    collection.Add(new PSAdaptedProperty(((dynamic)keyValuePair).Key, null));
                 }
             }
             else
