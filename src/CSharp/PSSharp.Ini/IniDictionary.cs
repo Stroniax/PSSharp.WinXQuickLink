@@ -14,7 +14,8 @@ namespace PSSharp.Ini
     /// </summary>
     public sealed partial class IniDictionary :
         ICloneable,
-        IDictionary
+        IDictionary,
+        IEnumerable<IniSection>
     {
         public IniDictionary()
         {
@@ -169,10 +170,11 @@ namespace PSSharp.Ini
         object ICloneable.Clone() => Clone();
 
         #region dictionary implementation
+        public IEnumerator<IniSection> GetEnumerator() => _sections.Values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _sections.Values.GetEnumerator();
         IDictionaryEnumerator IDictionary.GetEnumerator() => _sections.GetEnumerator();
         public IEnumerable<string> Keys => _sections.Keys;
-        public IEnumerable<IDictionary<string, string?>> Values => _sections.Values;
+        public IEnumerable<IDictionary<string, string?>> Values => (IEnumerable<IDictionary<string, string?>>)(object)_sections.Values ;
         bool IDictionary.IsFixedSize => ((IDictionary)_sections).IsFixedSize;
         bool IDictionary.IsReadOnly => ((IDictionary)_sections).IsReadOnly;
         ICollection IDictionary.Keys => ((IDictionary)_sections).Keys;
@@ -202,6 +204,8 @@ namespace PSSharp.Ini
         {
             _sections.Values.CopyTo((IniSection[])array, index);
         }
+
+
         int ICollection.Count => _sections.Count;
         bool ICollection.IsSynchronized => false;
         object? ICollection.SyncRoot => null;

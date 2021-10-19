@@ -45,6 +45,13 @@
                     <MethodName>GetSectionName</MethodName>
                 </GetCodeReference>
             </CodeProperty>
+            <CodeMethod>
+                <Name>GetEnumerator</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetEnumerator</MethodName>
+                </CodeReference>
+            </CodeMethod>
         </Members>
         <TypeAdapter>
             <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>

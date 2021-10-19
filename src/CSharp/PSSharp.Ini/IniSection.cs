@@ -15,6 +15,13 @@ namespace PSSharp.Ini
         private readonly Dictionary<string, string?> _keys;
         public string Name { get; }
         public int KeyCount => _keys.Count;
+
+        public IniSection(string name)
+        {
+            Name = name;
+            _parent = null!;
+            _keys = new Dictionary<string, string?>();
+        }
         internal IniSection(string name, IniDictionary parent)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));

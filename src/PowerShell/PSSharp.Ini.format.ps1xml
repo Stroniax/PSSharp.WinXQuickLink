@@ -1,5 +1,16 @@
 <?xml version="1.0"?>
 <Configuration>
+    <DefaultSettings>
+        <EnumerableExpansions>
+            <EnumerableExpansion>
+                <EntrySelectedBy>
+                    <TypeName>PSSharp.Ini.IniDictionary</TypeName>
+                    <TypeName>PSSharp.Ini.IniSection</TypeName>
+                </EntrySelectedBy>
+                <Expand>CoreOnly</Expand>
+            </EnumerableExpansion>
+        </EnumerableExpansions>
+    </DefaultSettings>
     <Controls>
         <Control>
             <Name>IniSectionControl</Name>
@@ -59,6 +70,24 @@
                             <ExpressionBinding>
                                 <ScriptBlock>[System.Diagnostics.Debug]::WriteLine('Getting sections of IniDictionary'); $sections = $_.GetSections(); [System.Diagnostics.Debug]::WriteLine("Got $($sections.Count) sections."); $sections</ScriptBlock>
                                 <EnumerateCollection>true</EnumerateCollection>
+                                <CustomControlName>IniSectionControl</CustomControlName>
+                            </ExpressionBinding>
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </View>
+        <View>
+            <Name>PSSharp.Ini.IniSection</Name>
+            <ViewSelectedBy>
+                <TypeName>PSSharp.Ini.IniSection</TypeName>
+            </ViewSelectedBy>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <CustomItem>
+                            <ExpressionBinding>
+                                <ScriptBlock>$_</ScriptBlock>
                                 <CustomControlName>IniSectionControl</CustomControlName>
                             </ExpressionBinding>
                         </CustomItem>
