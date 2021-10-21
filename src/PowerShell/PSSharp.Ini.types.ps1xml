@@ -3,33 +3,97 @@
     <Type>
         <Name>PSSharp.Ini.IniDictionary</Name>
         <Members>
-            <ScriptProperty>
-                <Name>SectionCount</Name>
-                <GetScriptBlock>
-                    $this.PSBase.SectionCount
-                </GetScriptBlock>
-            </ScriptProperty>
+            <CodeMethod>
+                <Name>Clear</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>Clear</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- Clear -->
             <CodeMethod>
                 <Name>Clone</Name>
                 <CodeReference>
                     <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
                     <MethodName>Clone</MethodName>
                 </CodeReference>
-            </CodeMethod>
+            </CodeMethod> <!-- Clone -->
             <CodeMethod>
                 <Name>ToString</Name>
                 <CodeReference>
                     <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
                     <MethodName>Serialize</MethodName>
                 </CodeReference>
-            </CodeMethod>
+            </CodeMethod> <!-- ToString -->
+            <CodeMethod>
+                <Name>Serialize</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>Serialize</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- Serialize -->
             <CodeMethod>
                 <Name>GetSections</Name>
                 <CodeReference>
                     <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
                     <MethodName>GetSections</MethodName>
                 </CodeReference>
-            </CodeMethod>
+            </CodeMethod> <!-- GetSections -->
+            <CodeMethod>
+                <Name>GetSection</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetSection</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetSection -->
+            <CodeMethod>
+                <Name>TryGetSection</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>TryGetSection</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- TryGetSection -->
+            <CodeMethod>
+                <Name>RemoveSection</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>RemoveSection</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- RemoveSection -->
+            <CodeMethod>
+                <Name>GetEnumerator</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetIniDictionaryEnumerator</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetEnumerator -->
+            <CodeMethod>
+                <Name>SectionExists</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>SectionExists</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- SectionExists -->
+            <CodeMethod>
+                <Name>GetHashCode</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetHashCode</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetHashCode -->
+            <CodeMethod>
+                <Name>Equals</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>Equals</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- Equals -->
+            <CodeMethod>
+                <Name>GetType</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetType</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetType -->
         </Members>
         <TypeAdapter>
             <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
@@ -38,20 +102,83 @@
     <Type>
         <Name>PSSharp.Ini.IniSection</Name>
         <Members>
-            <CodeProperty>
-                <Name>Name</Name>
-                <GetCodeReference>
-                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
-                    <MethodName>GetSectionName</MethodName>
-                </GetCodeReference>
-            </CodeProperty>
             <CodeMethod>
                 <Name>GetEnumerator</Name>
                 <CodeReference>
                     <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
-                    <MethodName>GetEnumerator</MethodName>
+                    <MethodName>GetIniSectionEnumerator</MethodName>
                 </CodeReference>
-            </CodeMethod>
+            </CodeMethod> <!-- GetEnumerator -->
+            <CodeMethod>
+                <Name>GetKeys</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetKeys</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetKeys -->
+            <CodeMethod>
+                <Name>GetValue</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetValue</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetValue -->
+            <CodeMethod>
+                <Name>SetValue</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>SetValue</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- SetValue -->
+            <CodeMethod>
+                <Name>ContainsKey</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>ContainsKey</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- ContainsKey -->
+            <CodeMethod>
+                <Name>TryGetValue</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>TryGetValue</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- TryGetValue -->
+            <CodeMethod>
+                <Name>Remove</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>Remove</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- Remove -->
+            <CodeMethod>
+                <Name>GetHashCode</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetHashCode</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetHashCode -->
+            <CodeMethod>
+                <Name>Equals</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>Equals</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- Equals -->
+            <CodeMethod>
+                <Name>GetType</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>GetType</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- GetType -->
+            <CodeMethod>
+                <Name>Clear</Name>
+                <CodeReference>
+                    <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>
+                    <MethodName>Clear</MethodName>
+                </CodeReference>
+            </CodeMethod> <!-- Clear -->
         </Members>
         <TypeAdapter>
             <TypeName>PSSharp.Ini.IniPropertyAdapter</TypeName>

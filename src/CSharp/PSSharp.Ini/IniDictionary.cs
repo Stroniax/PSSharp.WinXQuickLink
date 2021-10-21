@@ -35,6 +35,7 @@ namespace PSSharp.Ini
         private readonly Dictionary<string, WeakReference<IniSection>> _pendingSections;
         #endregion
 
+        public string? FilePath => _file?.FilePath;
         internal void NotifyValueChanged(IniSection section, string key, string? newValue, string? previousValue)
         {
             Debug.WriteLine("Value changed. Section {0}, key {1} updated from {2} to {3}.", args: new[] { section.Name, key, previousValue, newValue });
@@ -149,8 +150,11 @@ namespace PSSharp.Ini
                 foreach (var section in GetSections())
                 {
                     section.Clear();
-                    _pendingSections.Add(section.Name, new WeakReference<IniSection>(section));
-                    _sections.Remove(section.Name);
+                    // the Clear method above should cause the section to be moved to a weak reference
+                    if (_sections.Remove(section.Name))
+                    {
+                        _pendingSections.Add(section.Name, new WeakReference<IniSection>(section));
+                    }
                 }
             }
             ValueChanged?.Invoke(this, new IniDictionaryValueChangedEventArgs(null, null, null, null, _file?.FilePath));
@@ -180,7 +184,13 @@ namespace PSSharp.Ini
         ICollection IDictionary.Keys => ((IDictionary)_sections).Keys;
         ICollection IDictionary.Values => ((IDictionary)_sections).Values;
         void IDictionary.Add(object key, object value) => throw new NotSupportedException();
-        void IDictionary.Remove(object key) => throw new NotSupportedException();
+        void IDictionary.Remove(object key)
+        {
+            if (key is string str)
+            {
+                RemoveSection(str);
+            }
+        }
         bool IDictionary.Contains(object key) => key is string str && SectionExists(str);
         object IDictionary.this[object key]
         {

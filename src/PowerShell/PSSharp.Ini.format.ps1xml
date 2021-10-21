@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Configuration>
-    <DefaultSettings>
+    <!-- <DefaultSettings>
         <EnumerableExpansions>
             <EnumerableExpansion>
                 <EntrySelectedBy>
@@ -10,7 +10,7 @@
                 <Expand>CoreOnly</Expand>
             </EnumerableExpansion>
         </EnumerableExpansions>
-    </DefaultSettings>
+    </DefaultSettings> -->
     <Controls>
         <Control>
             <Name>IniSectionControl</Name>
@@ -18,6 +18,12 @@
                 <CustomEntries>
                     <CustomEntry>
                         <CustomItem>
+                            <ExpressionBinding>
+                                <ScriptBlock>
+                                    $type = if ($null -eq $_) { '$null' } else { $_.GetType().FullName }
+                                    [System.Diagnostics.Debug]::WriteLine("Formatting CustomControl for $type $($_.Name) with $($_.KeyCount) keys.");
+                                </ScriptBlock>
+                            </ExpressionBinding>
                             <NewLine />
                             <Text>[</Text>
                             <ExpressionBinding>
@@ -29,7 +35,6 @@
                                 <EnumerateCollection>true</EnumerateCollection>
                                 <CustomControlName>IniKeyControl</CustomControlName>
                             </ExpressionBinding>
-                            <NewLine />
                         </CustomItem>
                     </CustomEntry>
                 </CustomEntries>
@@ -42,7 +47,6 @@
                     <CustomEntry>
                         <CustomItem>
                             <NewLine />
-                            <Text>  </Text>
                             <ExpressionBinding>
                                 <PropertyName>Key</PropertyName>
                             </ExpressionBinding>
@@ -66,9 +70,12 @@
                 <CustomEntries>
                     <CustomEntry>
                         <CustomItem>
-                            <Text>.ini</Text>
                             <ExpressionBinding>
-                                <ScriptBlock>[System.Diagnostics.Debug]::WriteLine('Getting sections of IniDictionary'); $sections = $_.GetSections(); [System.Diagnostics.Debug]::WriteLine("Got $($sections.Count) sections."); $sections</ScriptBlock>
+                                <PropertyName>FilePath</PropertyName>
+                                <ItemSelectionCondition><PropertyName>FilePath</PropertyName></ItemSelectionCondition>
+                            </ExpressionBinding>
+                            <ExpressionBinding>
+                                <ScriptBlock>$_.GetSections()</ScriptBlock>
                                 <EnumerateCollection>true</EnumerateCollection>
                                 <CustomControlName>IniSectionControl</CustomControlName>
                             </ExpressionBinding>
@@ -106,7 +113,7 @@
                         <CustomItem>
                             <ExpressionBinding>
                                 <ScriptBlock>
-                                    $_.ToSTring()
+                                    $_.ToString()
                                 </ScriptBlock>
                             </ExpressionBinding>
                         </CustomItem>
