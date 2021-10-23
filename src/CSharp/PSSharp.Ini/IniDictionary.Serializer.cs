@@ -2,53 +2,68 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PSSharp.Ini
 {
     public sealed partial class IniDictionary
     {
-        public static string Serialize(IniDictionary ini)
-        {
-            throw new NotImplementedException();
-            // var sb = new StringBuilder();
-            // foreach (var section in ini.GetSections())
-            // {
-            //     sb.AppendLine($"[{section.Name}]");
-            //     foreach (var keyValuePair in section)
-            //     {
-            //         if (keyValuePair.Key.Contains("=")
-            //             || keyValuePair.Value.Contains("="))
-            //         {
-            //             throw new InvalidOperationException("The key and value may not contain the '=' (equal sign) character.");
-            //         }
-            //         sb.AppendLine($"{keyValuePair.Key}={keyValuePair.Value}");
-            //     }
-            // }
-            // return sb.ToString();
-        }
-        public override string ToString() => Serialize(this);
-        public static IniDictionary Deserialize(Stream data)
-        {
-            var text = new StringBuilder();
-            var encoding = Encoding.Unicode;
-            var bytesRead = new byte[1024];
-            while(true)
-            {
-                data.Read(bytesRead, 0, bytesRead.Length);
-                var textRead = encoding.GetString(bytesRead);
-                text.Append(textRead);
-            }
-            var lines = text.ToString().Split('\n');
-            var dictionary = new IniDictionary();
-            string? section = null;
+        private static Encoding AsciiEncoding => Encoding.ASCII;
+        private static byte NewlineByte = AsciiEncoding.GetBytes("\n")[0];
+        private static byte[] NewlineBytes = AsciiEncoding.GetBytes("\n");
 
-            for(int i = 0; i < lines.Length; i++)
+        public static void Serialize(IniDictionary ini, Stream stream)
+        {
+            var encoding = AsciiEncoding;
+            var sections = ini.GetSections();
+            for(int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
-                ParseLine(lines[i], i, dictionary, ref section);
+                var section = sections[sectionIndex];
+                var sectionBytes = encoding.GetBytes($"[{section.Name}]\n");
+                stream.Write(sectionBytes, 0, sectionBytes.Length);
+                foreach (var element in section)
+                {
+                    var elementBytes = encoding.GetBytes($"{element.Key}={element.Value}\n");
+                    stream.Write(elementBytes, 0, elementBytes.Length);
+                }
+                stream.WriteByte(NewlineByte);
             }
-            return dictionary;
+        }
+        public static async Task SerializeAsync(IniDictionary ini, Stream stream, CancellationToken cancellationToken = default)
+        {
+            var encoding = AsciiEncoding;
+            var sections = ini.GetSections();
+            for(int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
+            {
+                var section = sections[sectionIndex];
+                var sectionBytes = encoding.GetBytes($"[{section.Name}]\n");
+                await stream.WriteAsync(sectionBytes, 0, sectionBytes.Length, cancellationToken);
+                foreach (var element in section)
+                {
+                    var elementBytes = encoding.GetBytes($"{element.Key}={element.Value}\n");
+                    await stream.WriteAsync(elementBytes, 0, elementBytes.Length, cancellationToken);
+                }
+                await stream.WriteAsync(NewlineBytes, 0, NewlineBytes.Length);
+            }
         }
 
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            var sections = GetSections();
+            for(int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
+            {
+                var section = sections[sectionIndex];
+                sb.AppendLine($"[{section.Name}]");
+                foreach (var element in section)
+                {
+                    sb.AppendLine($"{element.Key}={element.Value}");
+                }
+                sb.AppendLine();
+            }
+            return sb.ToString();
+        }
         private static void ParseKeyValueLine(string? keyValueLine, int lineNumber, out string key, out string? value)
         {
             if (keyValueLine is null)

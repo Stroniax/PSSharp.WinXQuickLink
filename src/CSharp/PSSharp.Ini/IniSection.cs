@@ -135,7 +135,7 @@ namespace PSSharp.Ini
         void IDictionary<string, string?>.Add(string key, string? value)
         {
             var exists = TryGetValue(key, out var iniValue);
-            if (exists) _keys.Add(key, value);
+            if (exists) throw new InvalidOperationException("The key is already present in the dictionary.");
             SetValue(key, value);
         }
 

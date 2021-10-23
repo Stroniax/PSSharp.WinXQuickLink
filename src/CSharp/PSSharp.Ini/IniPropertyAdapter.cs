@@ -135,7 +135,7 @@ namespace PSSharp.Ini
             }
             if (iniDictionary.BaseObject is IniDictionary dictionary)
             {
-                return IniDictionary.Serialize(dictionary);
+                return dictionary.ToString();
             }
             else
             {
