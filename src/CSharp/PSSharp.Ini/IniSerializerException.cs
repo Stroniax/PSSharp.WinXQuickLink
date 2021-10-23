@@ -5,17 +5,17 @@ namespace PSSharp.Ini
     {
         public int Line { get; } = -1;
         public int Index { get; } = -1;
-        public IniSerializerException(int line, int index) : base($"[{line}:{index}] Invalid ini value.")
+        public IniSerializerException(int line, int index) : base($"({line}, {index}) Invalid ini value.")
         {
             Line = line;
             Index = index;
         }
-        public IniSerializerException(int line, int index, string message) : base(message)
+        public IniSerializerException(int line, int index, string message) : base($"$({line}, {index}) {message}")
         {
             Line = line;
             Index = index;
         }
-        public IniSerializerException(int line, int index, string message, System.Exception inner) : base(message, inner)
+        public IniSerializerException(int line, int index, string message, System.Exception inner) : base($"({line}, {index}) {message}", inner)
         {
             Line = line;
             Index = index;

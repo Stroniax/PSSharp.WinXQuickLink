@@ -13,11 +13,28 @@ namespace PSSharp.Ini
         private static byte NewlineByte = AsciiEncoding.GetBytes("\n")[0];
         private static byte[] NewlineBytes = AsciiEncoding.GetBytes("\n");
 
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            var sections = GetSections();
+            for (int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
+            {
+                var section = sections[sectionIndex];
+                sb.AppendLine($"[{section.Name}]");
+                foreach (var element in section)
+                {
+                    sb.AppendLine($"{element.Key}={element.Value}");
+                }
+                sb.AppendLine();
+            }
+            return sb.ToString();
+        }
         public static void Serialize(IniDictionary ini, Stream stream)
         {
             var encoding = AsciiEncoding;
             var sections = ini.GetSections();
-            for(int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
+            for (int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
                 var section = sections[sectionIndex];
                 var sectionBytes = encoding.GetBytes($"[{section.Name}]\n");
@@ -34,7 +51,7 @@ namespace PSSharp.Ini
         {
             var encoding = AsciiEncoding;
             var sections = ini.GetSections();
-            for(int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
+            for (int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
                 var section = sections[sectionIndex];
                 var sectionBytes = encoding.GetBytes($"[{section.Name}]\n");
@@ -47,22 +64,105 @@ namespace PSSharp.Ini
                 await stream.WriteAsync(NewlineBytes, 0, NewlineBytes.Length);
             }
         }
-
-        public override string ToString()
+        public static IniDictionary Deserialize(Stream stream, CancellationToken cancellationToken = default)
         {
-            var sb = new StringBuilder();
-            var sections = GetSections();
-            for(int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
+            var ini = new IniDictionary();
+            var encoding = AsciiEncoding;
+            var block = new byte[1024];
+            StringBuilder? incompleteLine = null;
+            string? currentSection = null;
+            int lineNumber = 0;
+            do
             {
-                var section = sections[sectionIndex];
-                sb.AppendLine($"[{section.Name}]");
-                foreach (var element in section)
+                cancellationToken.ThrowIfCancellationRequested();
+                var bytesRead = stream.Read(block, 0, block.Length);
+                var currentLine = encoding.GetString(block, 0, bytesRead);
+                if (!currentLine.Contains("\n"))
                 {
-                    sb.AppendLine($"{element.Key}={element.Value}");
+                    if (incompleteLine is null)
+                        incompleteLine = new StringBuilder(currentLine);
+                    else
+                        incompleteLine.Append(currentLine);
+
+                    continue;
                 }
-                sb.AppendLine();
+                if (incompleteLine != null)
+                {
+                    currentLine = incompleteLine.Append(currentLine).ToString();
+                }
+
+                string[] lines;
+                do
+                {
+                    lines = currentLine.Split(new[] { '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    if (lines.Length > 1)
+                    {
+                        incompleteLine = new StringBuilder(lines[1]);
+                    }
+                    else
+                    {
+                        incompleteLine = null;
+                    }
+
+                    currentLine = lines[0];
+                    ParseLine(currentLine, ++lineNumber, ini, ref currentSection);
+                    currentLine = incompleteLine?.ToString()!;
+                }
+                while (currentLine?.Contains("\n") ?? false);
             }
-            return sb.ToString();
+            while (stream.Position < stream.Length);
+
+            return ini;
+        }
+        public static async Task<IniDictionary> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default)
+        {
+            var ini = new IniDictionary();
+            var encoding = AsciiEncoding;
+            var block = new byte[1024];
+            StringBuilder? incompleteLine = null;
+            string? currentSection = null;
+            int lineNumber = 0;
+            do
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var bytesRead = await stream.ReadAsync(block, 0, block.Length, cancellationToken);
+                var currentLine = encoding.GetString(block, 0, bytesRead);
+                if (!currentLine.Contains("\n"))
+                {
+                    if (incompleteLine is null)
+                        incompleteLine = new StringBuilder(currentLine);
+                    else
+                        incompleteLine.Append(currentLine);
+
+                    continue;
+                }
+                if (incompleteLine != null)
+                {
+                    currentLine = incompleteLine.Append(currentLine).ToString();
+                }
+
+                string[] lines;
+                do
+                {
+                    lines = currentLine.Split(new[] { '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    if (lines.Length > 1)
+                    {
+                        incompleteLine = new StringBuilder(lines[1]);
+                    }
+                    else
+                    {
+                        incompleteLine = null;
+                    }
+
+                    currentLine = lines[0];
+                    ParseLine(currentLine, ++lineNumber, ini, ref currentSection);
+                    currentLine = incompleteLine?.ToString()!;
+                }
+                while (currentLine?.Contains("\n") ?? false);
+            }
+            while (stream.Position < stream.Length);
+
+            return ini;
         }
         private static void ParseKeyValueLine(string? keyValueLine, int lineNumber, out string key, out string? value)
         {
@@ -79,7 +179,7 @@ namespace PSSharp.Ini
                 throw new IniSerializerException(lineNumber, -1, "Attempted to parse invalid string as key/value line.");
             }
             key = keyValueLine.Substring(0, index);
-            value = keyValueLine.Substring(index);
+            value = keyValueLine.Substring(index + 1);
         }
         private static void ParseSectionLine(string? sectionLine, int lineNumber, out string sectionName)
         {
@@ -93,7 +193,7 @@ namespace PSSharp.Ini
                     throw new IniSerializerException(lineNumber, 0, "The section name declaration must be enclosed in square brackets.");
                 }
                 var indexOfStart = sectionLine.IndexOf('[', 1);
-                if (indexOfStart != 0)
+                if (indexOfStart != -1)
                 {
                     throw new IniSerializerException(lineNumber, indexOfStart, "The section name declaration must be enclosed in square brackets.");
                 }
@@ -113,17 +213,17 @@ namespace PSSharp.Ini
                 case IniTokenType.Comment:
                     return;
                 case IniTokenType.Section:
-                {
-                    ParseSectionLine(line, lineNumber, out currentSection);
-                }
-                break;
+                    {
+                        ParseSectionLine(line, lineNumber, out currentSection);
+                    }
+                    break;
                 case IniTokenType.Key:
-                {
-                    ParseKeyValueLine(line, lineNumber, out var key, out var value);
-                    if (currentSection is null) throw new IniSerializerException(lineNumber, 0, "Expected section header but got key-value.");
-                    destination[currentSection][key] = value;
-                }
-                break;
+                    {
+                        ParseKeyValueLine(line, lineNumber, out var key, out var value);
+                        if (currentSection is null) throw new IniSerializerException(lineNumber, 0, "Expected section header but got key-value.");
+                        destination[currentSection][key] = value;
+                    }
+                    break;
             }
         }
         private static IniTokenType GetTokenType(string? line)
@@ -137,7 +237,7 @@ namespace PSSharp.Ini
                 default: return IniTokenType.Key;
             }
         }
-        internal enum IniTokenType
+        private enum IniTokenType
         {
             EmptyLine,
             Comment,
