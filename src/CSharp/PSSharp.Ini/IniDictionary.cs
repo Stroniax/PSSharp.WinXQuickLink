@@ -214,7 +214,21 @@ namespace PSSharp.Ini
         {
             _sections.Values.CopyTo((IniSection[])array, index);
         }
-
+        public Dictionary<string, Dictionary<string, string>> ToDictionary()
+            => ToDictionary(null);
+        public Dictionary<string, Dictionary<string, string>> ToDictionary(IEqualityComparer<string>? comparer)
+        {
+            var result = new Dictionary<string, Dictionary<string, string>>(_sections.Count, comparer);
+            foreach (var section in _sections)
+            {
+                var sectionDictionary = result[section.Key] = new Dictionary<string, string>(section.Value.KeyCount, comparer);
+                foreach (var keyValuePair in section.Value)
+                {
+                    sectionDictionary[keyValuePair.Key] = keyValuePair.Value!;
+                }
+            }
+            return result;
+        }
 
         int ICollection.Count => _sections.Count;
         bool ICollection.IsSynchronized => false;

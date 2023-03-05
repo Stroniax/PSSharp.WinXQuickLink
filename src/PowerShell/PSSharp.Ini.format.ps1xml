@@ -1,16 +1,5 @@
 <?xml version="1.0"?>
 <Configuration>
-    <!-- <DefaultSettings>
-        <EnumerableExpansions>
-            <EnumerableExpansion>
-                <EntrySelectedBy>
-                    <TypeName>PSSharp.Ini.IniDictionary</TypeName>
-                    <TypeName>PSSharp.Ini.IniSection</TypeName>
-                </EntrySelectedBy>
-                <Expand>CoreOnly</Expand>
-            </EnumerableExpansion>
-        </EnumerableExpansions>
-    </DefaultSettings> -->
     <Controls>
         <Control>
             <Name>IniSectionControl</Name>
@@ -62,18 +51,55 @@
     </Controls>
     <ViewDefinitions>
         <View>
-            <Name>PSSharp.Ini.IniDictionary</Name>
+            <Name>PSSharp.Ini.IniFile</Name>
             <ViewSelectedBy>
-                <TypeName>PSSharp.Ini.IniDictionary</TypeName>
+                <TypeName>PSSharp.Ini.IniFile</TypeName>
             </ViewSelectedBy>
+            <GroupBy>
+                <PropertyName>FilePath</PropertyName>
+            </GroupBy>
             <CustomControl>
                 <CustomEntries>
                     <CustomEntry>
                         <CustomItem>
                             <ExpressionBinding>
+                                <CustomControl>
+                                    <CustomEntries>
+                                        <CustomEntry>
+                                            <CustomItem>
+                                                <ExpressionBinding>
+                                                    <ScriptBlock>
+                                                        $_.Values.GetSections()
+                                                    </ScriptBlock>
+                                                    <EnumerateCollection>true</EnumerateCollection>
+                                                    <CustomControlName>IniSectionControl</CustomControlName>
+                                                </ExpressionBinding>
+                                            </CustomItem>
+                                        </CustomEntry>
+                                    </CustomEntries>
+                                </CustomControl>
+                            </ExpressionBinding>
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </View>
+        <View>
+            <Name>PSSharp.Ini.IniDictionary</Name>
+            <ViewSelectedBy>
+                <TypeName>PSSharp.Ini.IniDictionary</TypeName>
+            </ViewSelectedBy>
+            <GroupBy>
+                <PropertyName>FilePath</PropertyName>
+            </GroupBy>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <CustomItem>
+                            <!-- <ExpressionBinding>
                                 <PropertyName>FilePath</PropertyName>
                                 <ItemSelectionCondition><PropertyName>FilePath</PropertyName></ItemSelectionCondition>
-                            </ExpressionBinding>
+                            </ExpressionBinding> -->
                             <ExpressionBinding>
                                 <ScriptBlock>$_.GetSections()</ScriptBlock>
                                 <EnumerateCollection>true</EnumerateCollection>
@@ -96,25 +122,6 @@
                             <ExpressionBinding>
                                 <ScriptBlock>$_</ScriptBlock>
                                 <CustomControlName>IniSectionControl</CustomControlName>
-                            </ExpressionBinding>
-                        </CustomItem>
-                    </CustomEntry>
-                </CustomEntries>
-            </CustomControl>
-        </View>
-        <View>
-            <Name>PSSharp.Ini.IniDictionary ToString</Name>
-            <ViewSelectedBy>
-                <TypeName>PSSharp.Ini.IniDictionary</TypeName>
-            </ViewSelectedBy>
-            <CustomControl>
-                <CustomEntries>
-                    <CustomEntry>
-                        <CustomItem>
-                            <ExpressionBinding>
-                                <ScriptBlock>
-                                    $_.ToString()
-                                </ScriptBlock>
                             </ExpressionBinding>
                         </CustomItem>
                     </CustomEntry>

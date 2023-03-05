@@ -34,34 +34,38 @@ namespace PSSharp.Ini
         {
             var encoding = AsciiEncoding;
             var sections = ini.GetSections();
+            string? firstLine = null;
             for (int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
                 var section = sections[sectionIndex];
-                var sectionBytes = encoding.GetBytes($"[{section.Name}]\n");
+                var sectionBytes = encoding.GetBytes($"{firstLine}[{section.Name}]");
                 stream.Write(sectionBytes, 0, sectionBytes.Length);
                 foreach (var element in section)
                 {
-                    var elementBytes = encoding.GetBytes($"{element.Key}={element.Value}\n");
+                    var elementBytes = encoding.GetBytes($"\r\n{element.Key}={element.Value}");
                     stream.Write(elementBytes, 0, elementBytes.Length);
                 }
-                stream.WriteByte(NewlineByte);
+
+                firstLine ??= "\r\n";
             }
         }
         public static async Task SerializeAsync(IniDictionary ini, Stream stream, CancellationToken cancellationToken = default)
         {
             var encoding = AsciiEncoding;
             var sections = ini.GetSections();
+            string? firstLine = null;
             for (int sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
                 var section = sections[sectionIndex];
-                var sectionBytes = encoding.GetBytes($"[{section.Name}]\n");
+                var sectionBytes = encoding.GetBytes($"{firstLine}[{section.Name}]");
                 await stream.WriteAsync(sectionBytes, 0, sectionBytes.Length, cancellationToken);
                 foreach (var element in section)
                 {
-                    var elementBytes = encoding.GetBytes($"{element.Key}={element.Value}\n");
+                    var elementBytes = encoding.GetBytes($"\r\n{element.Key}={element.Value}");
                     await stream.WriteAsync(elementBytes, 0, elementBytes.Length, cancellationToken);
                 }
-                await stream.WriteAsync(NewlineBytes, 0, NewlineBytes.Length);
+
+                firstLine ??= "\r\n";
             }
         }
         public static IniDictionary Deserialize(Stream stream, CancellationToken cancellationToken = default)
@@ -77,7 +81,7 @@ namespace PSSharp.Ini
                 cancellationToken.ThrowIfCancellationRequested();
                 var bytesRead = stream.Read(block, 0, block.Length);
                 var currentLine = encoding.GetString(block, 0, bytesRead);
-                if (!currentLine.Contains("\n"))
+                if (!currentLine.Contains("\r\n"))
                 {
                     if (incompleteLine is null)
                         incompleteLine = new StringBuilder(currentLine);
@@ -94,7 +98,7 @@ namespace PSSharp.Ini
                 string[] lines;
                 do
                 {
-                    lines = currentLine.Split(new[] { '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    lines = currentLine.Split(new[] { '\r', '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
                     if (lines.Length > 1)
                     {
                         incompleteLine = new StringBuilder(lines[1]);
@@ -108,7 +112,7 @@ namespace PSSharp.Ini
                     ParseLine(currentLine, ++lineNumber, ini, ref currentSection);
                     currentLine = incompleteLine?.ToString()!;
                 }
-                while (currentLine?.Contains("\n") ?? false);
+                while (currentLine?.Contains("\r\n") ?? false);
             }
             while (stream.Position < stream.Length);
 
@@ -127,7 +131,7 @@ namespace PSSharp.Ini
                 cancellationToken.ThrowIfCancellationRequested();
                 var bytesRead = await stream.ReadAsync(block, 0, block.Length, cancellationToken);
                 var currentLine = encoding.GetString(block, 0, bytesRead);
-                if (!currentLine.Contains("\n"))
+                if (!currentLine.Contains("\r\n"))
                 {
                     if (incompleteLine is null)
                         incompleteLine = new StringBuilder(currentLine);
@@ -144,7 +148,7 @@ namespace PSSharp.Ini
                 string[] lines;
                 do
                 {
-                    lines = currentLine.Split(new[] { '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    lines = currentLine.Split(new[] { '\r', '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
                     if (lines.Length > 1)
                     {
                         incompleteLine = new StringBuilder(lines[1]);
@@ -158,7 +162,7 @@ namespace PSSharp.Ini
                     ParseLine(currentLine, ++lineNumber, ini, ref currentSection);
                     currentLine = incompleteLine?.ToString()!;
                 }
-                while (currentLine?.Contains("\n") ?? false);
+                while (currentLine?.Contains("\r\n") ?? false);
             }
             while (stream.Position < stream.Length);
 
@@ -190,17 +194,17 @@ namespace PSSharp.Ini
                 var firstIndexOfStart = sectionLine.IndexOf('[');
                 if (firstIndexOfStart != 0)
                 {
-                    throw new IniSerializerException(lineNumber, 0, "The section name declaration must be enclosed in square brackets.");
+                    throw new IniSerializerException(lineNumber, 0, "The section name declaration must begin with an opening square bracket ('[').");
                 }
-                var indexOfStart = sectionLine.IndexOf('[', 1);
-                if (indexOfStart != -1)
+                var indexOfExtraStart = sectionLine.IndexOf('[', 1);
+                if (indexOfExtraStart != -1)
                 {
-                    throw new IniSerializerException(lineNumber, indexOfStart, "The section name declaration must be enclosed in square brackets.");
+                    throw new IniSerializerException(lineNumber, indexOfExtraStart, "Invalid number of section name brackets. There should be no more than a single opening square bracket in the section header line.");
                 }
                 int indexOfEnd = sectionLine.IndexOf(']');
                 if (indexOfEnd != sectionLine.Length - 1)
                 {
-                    throw new IniSerializerException(lineNumber, sectionLine.Length - 1, "The section name declaration must be enclosed in square brackets.");
+                    throw new IniSerializerException(lineNumber, sectionLine.Length - 1, "The section name declaration must contain a single closing square bracket (']') at the end of the line.");
                 }
                 sectionName = sectionLine.Substring(1, sectionLine.Length - 2);
             }
